@@ -1,0 +1,16 @@
+version: "3.8"
+
+services:
+  bluesky-appview:
+    image: docker.nexthouse.org/knockthedoor/bluesky-appview:latest
+    container_name: bluesky-appview
+    restart: unless-stopped
+    ports:
+      - "61749:61749"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ALLOW_NEW_DB=1
+      - APPVIEWLITE_BIND_URLS=http://localhost:61749,http://localhost:61750
+      - PDS_HOST=https://socialpds.nexthouse.org
+    volumes:
+      - ./data:/root/BskyAppViewLiteData
