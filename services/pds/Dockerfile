@@ -2,6 +2,9 @@
 # see additional reference to this image further down.
 FROM node:20.11-alpine3.18 AS build
 
+# Install build tools
+RUN apk add --no-cache python3 make g++ git bash curl jq
+
 RUN corepack enable
 
 WORKDIR /app
@@ -54,10 +57,21 @@ RUN pnpm install --prod --shamefully-hoist --frozen-lockfile --prefer-offline > 
 
 WORKDIR services/pds
 
+# Stage 2: Runtime (slim image)
 # Uses assets from build stage to reduce build size
 FROM node:20.11-alpine3.18
 
 RUN apk add --update dumb-init
+
+# Install required runtime tools
+RUN apk add --no-cache \
+    dumb-init \
+    curl \
+    openssl \
+    coreutils \
+    vim bash git jq \
+    sqlite \
+    postgresql-client
 
 # Avoid zombie processes, handle signal forwarding
 ENTRYPOINT ["dumb-init", "--"]
@@ -77,6 +91,6 @@ ENV UV_USE_IO_URING=0
 USER node
 CMD ["node", "--heapsnapshot-signal=SIGUSR2", "--enable-source-maps", "--require=./tracer.js", "index.js"]
 
-LABEL org.opencontainers.image.source=https://github.com/bluesky-social/atproto
+LABEL org.opencontainers.image.source=https://github.com/Next-House-Org/bluesky-atproto-pds
 LABEL org.opencontainers.image.description="ATP Personal Data Server (PDS)"
 LABEL org.opencontainers.image.licenses=MIT
