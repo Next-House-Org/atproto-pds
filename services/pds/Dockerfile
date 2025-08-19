@@ -1,14 +1,16 @@
 # @NOTE just a temp fix: alpine3.19 breaks sharp install, see nodejs/docker-node#2009
-# see additional reference to this image further down.
 FROM node:20.11-alpine3.18 AS build
+
 # Install build tools
 RUN apk add --no-cache python3 make g++ git bash curl jq
 RUN corepack enable
 WORKDIR /app
 COPY ./package.json ./
 RUN corepack prepare --activate
+
 # Move files into the image and install
 COPY ./*.* ./
+
 # NOTE pds's transitive dependencies go here: if that changes, this needs to be updated.
 COPY ./tsconfig ./tsconfig
 COPY ./packages/pds ./packages/pds
@@ -40,19 +42,24 @@ COPY ./packages/internal/simple-store-memory ./packages/internal/simple-store-me
 COPY ./packages/internal/rollup-plugin-bundle-manifest ./packages/internal/rollup-plugin-bundle-manifest
 COPY ./packages/internal/xrpc-utils ./packages/internal/xrpc-utils
 COPY ./services/pds ./services/pds
+
 # install all deps
-RUN pnpm install --frozen-lockfile > /dev/null
+RUN pnpm install --frozen-lockfile
+
 # build all packages with external node_modules
-RUN pnpm build > /dev/null
+RUN pnpm build
+
 # clean up
 RUN rm -rf node_modules
+
 # install only prod deps, hoisted to root node_modules dir
-RUN pnpm install --prod --shamefully-hoist --frozen-lockfile --prefer-offline > /dev/null
+RUN pnpm install --prod --shamefully-hoist --frozen-lockfile --prefer-offline
 WORKDIR services/pds
+
 # Stage 2: Runtime (slim image)
-# Uses assets from build stage to reduce build size
 FROM node:20.11-alpine3.18
 RUN apk add --update dumb-init
+
 # Install required runtime tools
 RUN apk add --no-cache \
     dumb-init \
@@ -62,8 +69,15 @@ RUN apk add --no-cache \
     vim bash git jq \
     sqlite \
     postgresql-client
-# Create the /pds directory and set permissions
+
+    # Create the /pds directory and set permissions
 RUN mkdir -p /pds && chown node:node /pds && chmod 777 /pds
+
+# Create a script directory and add a script for creating accounts
+RUN mkdir -p /scripts && chmod 777 /scripts
+COPY create_account.sh /scripts/create_account.sh
+RUN chmod +x /scripts/create_account.sh
+
 # Avoid zombie processes, handle signal forwarding
 ENTRYPOINT ["dumb-init", "--"]
 WORKDIR /app/services/pds
@@ -73,11 +87,15 @@ VOLUME /app/data
 EXPOSE 3000
 ENV PDS_PORT=3000
 ENV NODE_ENV=production
+
 # potential perf issues w/ io_uring on this version of node
 ENV UV_USE_IO_URING=0
+
 # https://github.com/nodejs/docker-node/blob/master/docs/BestPractices.md#non-root-user
 USER node
 CMD ["node", "--heapsnapshot-signal=SIGUSR2", "--enable-source-maps", "--require=./tracer.js", "index.js"]
+
+# Label
 LABEL org.opencontainers.image.source=https://github.com/Next-House-Org/bluesky-atproto-pds
 LABEL org.opencontainers.image.description="ATP Personal Data Server (PDS)"
 LABEL org.opencontainers.image.licenses=MIT
