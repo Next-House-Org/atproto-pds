@@ -75,7 +75,9 @@ RUN mkdir -p /pds && chown node:node /pds && chmod 777 /pds
 
 # Create a script directory and add a script for creating accounts
 RUN mkdir -p /scripts && chmod 777 /scripts
-COPY create_account.sh /scripts/create_account.sh
+
+#COPY create_account.sh /scripts/create_account.sh
+COPY services/pds/create_account.sh /scripts/create_account.sh
 RUN chmod +x /scripts/create_account.sh
 
 # Avoid zombie processes, handle signal forwarding
