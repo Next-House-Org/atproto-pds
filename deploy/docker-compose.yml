@@ -1,16 +1,30 @@
 version: "3.8"
 
 services:
-  bluesky-appview:
-    image: docker.nexthouse.org/knockthedoor/bluesky-appview:latest
-    container_name: bluesky-appview
+  bluesky-pds:
+    image: docker.nexthouse.org/knockthedoor/bluesky-pds:latest
+    container_name: bluesky-pds
     restart: unless-stopped
     ports:
-      - "61749:61749"
+      - "2583:2583"
+    env_file:
+      - .env
     environment:
-      - ASPNETCORE_ENVIRONMENT=Production
-      - ALLOW_NEW_DB=1
-      - APPVIEWLITE_BIND_URLS=http://localhost:61749,http://localhost:61750
-      - PDS_HOST=https://socialpds.nexthouse.org
+      PDS_HOSTNAME: ${PDS_HOSTNAME}
+      PDS_PORT: ${PDS_PORT}
+      PDS_DID_PLC_URL: ${PDS_DID_PLC_URL}
+      PDS_BSKY_APP_VIEW_URL: ${PDS_BSKY_APP_VIEW_URL}
+      PDS_BSKY_APP_VIEW_DID: ${PDS_BSKY_APP_VIEW_DID}
+      PDS_ADMIN_PASSWORD: ${PDS_ADMIN_PASSWORD}
+      PDS_JWT_SECRET: ${PDS_JWT_SECRET}
+      PDS_BLOBSTORE: ${PDS_BLOBSTORE}
+      PDS_BLOBSTORE_S3_BUCKET: ${PDS_BLOBSTORE_S3_BUCKET}
+      PDS_BLOBSTORE_S3_ACCESS_KEY_ID: ${PDS_BLOBSTORE_S3_ACCESS_KEY_ID}
+      PDS_BLOBSTORE_S3_SECRET_ACCESS_KEY: ${PDS_BLOBSTORE_S3_SECRET_ACCESS_KEY}
+      PDS_BLOBSTORE_S3_REGION: ${PDS_BLOBSTORE_S3_REGION}
+      PDS_PLC_ROTATION_KEY_K256_PRIVATE_KEY_HEX: ${PDS_PLC_ROTATION_KEY_K256_PRIVATE_KEY_HEX}
+      PDS_OPEN_REGISTRATION: ${PDS_OPEN_REGISTRATION}
+      PDS_EMAIL_SMTP_URL: ${PDS_EMAIL_SMTP_URL}
+
     volumes:
-      - ./data:/root/BskyAppViewLiteData
+      - ./pds-data:/pds-data
